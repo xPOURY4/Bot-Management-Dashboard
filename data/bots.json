@@ -1,0 +1,29 @@
+[
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "name": "Example Python Bot",
+    "path": "C:\\Bots\\PythonBot",
+    "command": "python main.py",
+    "notes": "This is an example Python bot. Replace with your actual bot path and command.",
+    "pinned": false,
+    "order": 0
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440001",
+    "name": "Example Node.js Bot",
+    "path": "C:\\Bots\\NodeBot",
+    "command": "node index.js",
+    "notes": "This is an example Node.js bot. Replace with your actual bot path and command.",
+    "pinned": true,
+    "order": 1
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440002",
+    "name": "Discord Bot",
+    "path": "C:\\Bots\\DiscordBot",
+    "command": "npm start",
+    "notes": "Example Discord bot running with npm. Make sure to configure your bot token.",
+    "pinned": false,
+    "order": 2
+  }
+]

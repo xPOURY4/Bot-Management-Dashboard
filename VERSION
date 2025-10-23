@@ -1,0 +1,17 @@
+Bot Management Dashboard
+Version: 1.0.0
+Build Date: 2025
+Developer: TheRealPourya Team
+
+Release Notes:
+- Initial production release
+- Full bot management system
+- Modern web-based dashboard
+- PowerShell integration
+- Dark/Light theme support
+- Drag & drop functionality
+- Search and filter capabilities
+- Pin/Unpin bots
+- Run all bots feature
+- Status tracking
+- Persistent JSON storage
