@@ -1,0 +1,979 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Bot Management Dashboard - TheRealPourya Team</title>
+
+        <!-- Favicon -->
+        <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+
+        <!-- Tailwind CSS -->
+        <script src="https://cdn.tailwindcss.com"></script>
+
+        <!-- Alpine.js -->
+        <script
+            defer
+            src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"
+        ></script>
+
+        <!-- SortableJS for drag and drop -->
+        <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+
+        <!-- Font Awesome for icons -->
+        <link
+            rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+        />
+
+        <style>
+            [x-cloak] {
+                display: none !important;
+            }
+
+            .gradient-bg {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            }
+
+            .dark .gradient-bg {
+                background: linear-gradient(135deg, #4c51bf 0%, #553c9a 100%);
+            }
+
+            .bot-card {
+                transition: all 0.3s ease;
+            }
+
+            .bot-card:hover {
+                transform: translateY(-4px);
+                box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            }
+
+            .sortable-ghost {
+                opacity: 0.4;
+            }
+
+            .sortable-drag {
+                cursor: move;
+            }
+
+            .toast {
+                animation: slideIn 0.3s ease-out;
+            }
+
+            @keyframes slideIn {
+                from {
+                    transform: translateX(400px);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+            }
+
+            .modal-backdrop {
+                animation: fadeIn 0.2s ease-out;
+            }
+
+            @keyframes fadeIn {
+                from {
+                    opacity: 0;
+                }
+                to {
+                    opacity: 1;
+                }
+            }
+
+            .pulse-dot {
+                animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+            }
+
+            @keyframes pulse {
+                0%,
+                100% {
+                    opacity: 1;
+                }
+                50% {
+                    opacity: 0.5;
+                }
+            }
+
+            /* Footer sticky at bottom */
+            body {
+                min-height: 100vh;
+                display: flex;
+                flex-direction: column;
+            }
+
+            main {
+                flex: 1;
+            }
+        </style>
+    </head>
+    <body
+        class="bg-gray-50 dark:bg-gray-900 transition-colors duration-200"
+        x-data="dashboardApp()"
+        x-init="init()"
+    >
+        <!-- Header -->
+        <header class="gradient-bg text-white shadow-lg">
+            <div class="container mx-auto px-4 py-6">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-4">
+                        <i class="fas fa-robot text-4xl"></i>
+                        <div>
+                            <h1 class="text-3xl font-bold">
+                                Bot Management Dashboard
+                            </h1>
+                            <p class="text-purple-100 text-sm">
+                                TheRealPourya Team
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center space-x-4">
+                        <!-- Theme Toggle -->
+                        <button
+                            @click="toggleTheme()"
+                            class="p-2 rounded-lg bg-white bg-opacity-20 hover:bg-opacity-30 transition"
+                        >
+                            <i
+                                :class="darkMode ? 'fas fa-sun' : 'fas fa-moon'"
+                                class="text-xl"
+                            ></i>
+                        </button>
+
+                        <!-- Stats -->
+                        <div class="hidden md:block text-right">
+                            <div
+                                class="text-2xl font-bold"
+                                x-text="bots.length"
+                            ></div>
+                            <div class="text-xs text-purple-100">
+                                Total Bots
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="container mx-auto px-4 py-8">
+            <!-- Action Bar -->
+            <div
+                class="mb-8 flex flex-col md:flex-row gap-4 items-center justify-between"
+            >
+                <div class="flex flex-wrap gap-2">
+                    <button
+                        @click="openAddModal()"
+                        class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-semibold shadow-lg transition flex items-center space-x-2"
+                    >
+                        <i class="fas fa-plus"></i>
+                        <span>Add Bot</span>
+                    </button>
+
+                    <button
+                        @click="runAllBots()"
+                        class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold shadow-lg transition flex items-center space-x-2"
+                    >
+                        <i class="fas fa-play-circle"></i>
+                        <span>Run All</span>
+                    </button>
+
+                    <button
+                        @click="refreshBots()"
+                        class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold shadow-lg transition flex items-center space-x-2"
+                    >
+                        <i
+                            class="fas fa-sync-alt"
+                            :class="{'fa-spin': loading}"
+                        ></i>
+                        <span>Refresh</span>
+                    </button>
+                </div>
+
+                <!-- Search Bar -->
+                <div class="w-full md:w-auto md:min-w-[300px]">
+                    <div class="relative">
+                        <input
+                            type="text"
+                            x-model="searchQuery"
+                            placeholder="Search bots..."
+                            class="w-full px-4 py-3 pl-12 rounded-lg border-2 border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white focus:border-purple-500 focus:outline-none transition"
+                        />
+                        <i
+                            class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"
+                        ></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loading State -->
+            <div
+                x-show="loading && bots.length === 0"
+                class="text-center py-20"
+            >
+                <i
+                    class="fas fa-spinner fa-spin text-6xl text-purple-600 mb-4"
+                ></i>
+                <p class="text-gray-600 dark:text-gray-400 text-xl">
+                    Loading bots...
+                </p>
+            </div>
+
+            <!-- Empty State -->
+            <div
+                x-show="!loading && filteredBots.length === 0 && searchQuery === ''"
+                class="text-center py-20"
+            >
+                <i class="fas fa-robot text-6xl text-gray-400 mb-4"></i>
+                <p class="text-gray-600 dark:text-gray-400 text-xl mb-4">
+                    No bots yet!
+                </p>
+                <button
+                    @click="openAddModal()"
+                    class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-semibold shadow-lg transition"
+                >
+                    <i class="fas fa-plus mr-2"></i> Add Your First Bot
+                </button>
+            </div>
+
+            <!-- No Search Results -->
+            <div
+                x-show="!loading && filteredBots.length === 0 && searchQuery !== ''"
+                class="text-center py-20"
+            >
+                <i class="fas fa-search text-6xl text-gray-400 mb-4"></i>
+                <p class="text-gray-600 dark:text-gray-400 text-xl">
+                    No bots match your search
+                </p>
+            </div>
+
+            <!-- Bots Grid -->
+            <div
+                id="bots-grid"
+                class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                x-show="filteredBots.length > 0"
+            >
+                <template x-for="bot in filteredBots" :key="bot.id">
+                    <div
+                        :data-id="bot.id"
+                        class="bot-card bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden cursor-move"
+                    >
+                        <!-- Card Header -->
+                        <div
+                            class="p-6 border-b border-gray-200 dark:border-gray-700"
+                        >
+                            <div class="flex items-start justify-between mb-2">
+                                <div class="flex items-center space-x-2 flex-1">
+                                    <i
+                                        class="fas fa-grip-vertical text-gray-400 cursor-move"
+                                    ></i>
+                                    <h3
+                                        class="text-xl font-bold text-gray-800 dark:text-white truncate"
+                                        x-text="bot.name"
+                                    ></h3>
+                                </div>
+
+                                <!-- Pin Button -->
+                                <button @click="togglePin(bot.id)" class="ml-2">
+                                    <i
+                                        :class="bot.pinned ? 'fas fa-thumbtack text-purple-600' : 'far fa-thumbtack text-gray-400 hover:text-purple-600'"
+                                        class="text-lg transition"
+                                    ></i>
+                                </button>
+                            </div>
+
+                            <!-- Status Badge -->
+                            <div class="flex items-center space-x-2 mt-2">
+                                <span
+                                    :class="bot.status === 'running' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'"
+                                    class="px-3 py-1 rounded-full text-xs font-semibold flex items-center space-x-1"
+                                >
+                                    <span
+                                        :class="bot.status === 'running' ? 'bg-green-500 pulse-dot' : 'bg-gray-400'"
+                                        class="w-2 h-2 rounded-full"
+                                    ></span>
+                                    <span
+                                        x-text="bot.status === 'running' ? 'Running' : 'Stopped'"
+                                    ></span>
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Card Body -->
+                        <div class="p-6">
+                            <!-- Path -->
+                            <div class="mb-4">
+                                <p
+                                    class="text-xs text-gray-500 dark:text-gray-400 mb-1"
+                                >
+                                    Path
+                                </p>
+                                <p
+                                    class="text-sm text-gray-700 dark:text-gray-300 font-mono bg-gray-100 dark:bg-gray-900 px-3 py-2 rounded truncate"
+                                    :title="bot.path"
+                                    x-text="bot.path"
+                                ></p>
+                            </div>
+
+                            <!-- Command -->
+                            <div class="mb-4">
+                                <p
+                                    class="text-xs text-gray-500 dark:text-gray-400 mb-1"
+                                >
+                                    Command
+                                </p>
+                                <p
+                                    class="text-sm text-gray-700 dark:text-gray-300 font-mono bg-gray-100 dark:bg-gray-900 px-3 py-2 rounded truncate"
+                                    x-text="bot.command"
+                                ></p>
+                            </div>
+
+                            <!-- Notes -->
+                            <div class="mb-4" x-show="bot.notes">
+                                <p
+                                    class="text-xs text-gray-500 dark:text-gray-400 mb-1"
+                                >
+                                    Notes
+                                </p>
+                                <p
+                                    class="text-sm text-gray-700 dark:text-gray-300 line-clamp-2"
+                                    x-text="bot.notes"
+                                ></p>
+                            </div>
+                        </div>
+
+                        <!-- Card Footer - Action Buttons -->
+                        <div
+                            class="p-4 bg-gray-50 dark:bg-gray-900 flex flex-wrap gap-2"
+                        >
+                            <button
+                                @click="runBot(bot.id)"
+                                class="flex-1 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-semibold transition flex items-center justify-center space-x-1"
+                            >
+                                <i class="fas fa-play"></i>
+                                <span>Run</span>
+                            </button>
+
+                            <button
+                                @click="openFolder(bot.id)"
+                                class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold transition flex items-center justify-center space-x-1"
+                            >
+                                <i class="fas fa-folder-open"></i>
+                                <span>Folder</span>
+                            </button>
+
+                            <button
+                                @click="openEditModal(bot)"
+                                class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg font-semibold transition"
+                            >
+                                <i class="fas fa-edit"></i>
+                            </button>
+
+                            <button
+                                @click="confirmDelete(bot)"
+                                class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-semibold transition"
+                            >
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer
+            class="py-6 bg-gray-100 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700"
+        >
+            <div class="container mx-auto px-4 text-center">
+                <p class="text-gray-600 dark:text-gray-400">
+                    Bot Management Dashboard v1.0.0
+                </p>
+                <p class="text-gray-500 dark:text-gray-500 text-sm mt-2">
+                    Developed by
+                    <a
+                        href="https://x.com/TheRealPourya"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="font-semibold text-purple-600 hover:text-purple-700 dark:hover:text-purple-500 transition-colors"
+                    >
+                        TheRealPourya
+                    </a>
+                </p>
+            </div>
+        </footer>
+
+        <!-- Add/Edit Modal -->
+        <div
+            x-show="showModal"
+            x-cloak
+            class="fixed inset-0 z-50 overflow-y-auto modal-backdrop"
+            @click.self="closeModal()"
+        >
+            <div class="flex items-center justify-center min-h-screen px-4">
+                <div class="fixed inset-0 bg-black opacity-50"></div>
+
+                <div
+                    class="relative bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-2xl w-full p-8"
+                    @click.away="closeModal()"
+                >
+                    <!-- Modal Header -->
+                    <div class="flex items-center justify-between mb-6">
+                        <h2
+                            class="text-2xl font-bold text-gray-800 dark:text-white"
+                            x-text="editMode ? 'Edit Bot' : 'Add New Bot'"
+                        ></h2>
+                        <button
+                            @click="closeModal()"
+                            class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-2xl"
+                        >
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+
+                    <!-- Modal Body -->
+                    <form @submit.prevent="saveBot()">
+                        <!-- Bot Name -->
+                        <div class="mb-4">
+                            <label
+                                class="block text-gray-700 dark:text-gray-300 font-semibold mb-2"
+                            >
+                                <i class="fas fa-robot mr-2"></i>Bot Name *
+                            </label>
+                            <input
+                                type="text"
+                                x-model="formData.name"
+                                required
+                                class="w-full px-4 py-3 rounded-lg border-2 border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:border-purple-500 focus:outline-none transition"
+                                placeholder="My Awesome Bot"
+                            />
+                        </div>
+
+                        <!-- Bot Path -->
+                        <div class="mb-4">
+                            <label
+                                class="block text-gray-700 dark:text-gray-300 font-semibold mb-2"
+                            >
+                                <i class="fas fa-folder mr-2"></i>Folder Path *
+                            </label>
+                            <input
+                                type="text"
+                                x-model="formData.path"
+                                required
+                                class="w-full px-4 py-3 rounded-lg border-2 border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:border-purple-500 focus:outline-none transition font-mono"
+                                placeholder="C:\Bots\MyBot"
+                            />
+                        </div>
+
+                        <!-- Run Command -->
+                        <div class="mb-4">
+                            <label
+                                class="block text-gray-700 dark:text-gray-300 font-semibold mb-2"
+                            >
+                                <i class="fas fa-terminal mr-2"></i>Run Command
+                                *
+                            </label>
+                            <input
+                                type="text"
+                                x-model="formData.command"
+                                required
+                                class="w-full px-4 py-3 rounded-lg border-2 border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:border-purple-500 focus:outline-none transition font-mono"
+                                placeholder="python main.py"
+                            />
+                            <p
+                                class="text-xs text-gray-500 dark:text-gray-400 mt-1"
+                            >
+                                Examples: <code>python main.py</code>,
+                                <code>node index.js</code>,
+                                <code>npm start</code>
+                            </p>
+                        </div>
+
+                        <!-- Notes -->
+                        <div class="mb-6">
+                            <label
+                                class="block text-gray-700 dark:text-gray-300 font-semibold mb-2"
+                            >
+                                <i class="fas fa-sticky-note mr-2"></i>Notes
+                            </label>
+                            <textarea
+                                x-model="formData.notes"
+                                rows="3"
+                                class="w-full px-4 py-3 rounded-lg border-2 border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:border-purple-500 focus:outline-none transition resize-none"
+                                placeholder="Optional notes about this bot..."
+                            ></textarea>
+                        </div>
+
+                        <!-- Pin Checkbox -->
+                        <div class="mb-6">
+                            <label
+                                class="flex items-center space-x-2 cursor-pointer"
+                            >
+                                <input
+                                    type="checkbox"
+                                    x-model="formData.pinned"
+                                    class="w-5 h-5 text-purple-600 rounded focus:ring-purple-500"
+                                />
+                                <span
+                                    class="text-gray-700 dark:text-gray-300 font-semibold"
+                                >
+                                    <i class="fas fa-thumbtack mr-2"></i>Pin
+                                    this bot
+                                </span>
+                            </label>
+                        </div>
+
+                        <!-- Modal Footer -->
+                        <div class="flex gap-3">
+                            <button
+                                type="button"
+                                @click="closeModal()"
+                                class="flex-1 px-6 py-3 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-semibold hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                class="flex-1 px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold transition"
+                            >
+                                <i
+                                    :class="editMode ? 'fas fa-save' : 'fas fa-plus'"
+                                    class="mr-2"
+                                ></i>
+                                <span
+                                    x-text="editMode ? 'Save Changes' : 'Add Bot'"
+                                ></span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast Notifications -->
+        <div
+            class="fixed bottom-4 right-4 z-50 space-y-2"
+            x-show="toasts.length > 0"
+        >
+            <template x-for="toast in toasts" :key="toast.id">
+                <div
+                    class="toast bg-white dark:bg-gray-800 rounded-lg shadow-2xl p-4 min-w-[300px] border-l-4"
+                    :class="{
+                    'border-green-500': toast.type === 'success',
+                    'border-red-500': toast.type === 'error',
+                    'border-blue-500': toast.type === 'info',
+                    'border-yellow-500': toast.type === 'warning'
+                }"
+                    x-transition
+                >
+                    <div class="flex items-start space-x-3">
+                        <i
+                            :class="{
+                        'fas fa-check-circle text-green-500': toast.type === 'success',
+                        'fas fa-exclamation-circle text-red-500': toast.type === 'error',
+                        'fas fa-info-circle text-blue-500': toast.type === 'info',
+                        'fas fa-exclamation-triangle text-yellow-500': toast.type === 'warning'
+                    }"
+                            class="text-2xl mt-1"
+                        ></i>
+                        <div class="flex-1">
+                            <p
+                                class="text-gray-800 dark:text-white font-semibold"
+                                x-text="toast.message"
+                            ></p>
+                        </div>
+                        <button
+                            @click="removeToast(toast.id)"
+                            class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                        >
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            </template>
+        </div>
+
+        <script>
+            function dashboardApp() {
+                return {
+                    bots: [],
+                    filteredBots: [],
+                    searchQuery: "",
+                    loading: false,
+                    showModal: false,
+                    editMode: false,
+                    darkMode: false,
+                    toasts: [],
+                    sortable: null,
+                    formData: {
+                        id: null,
+                        name: "",
+                        path: "",
+                        command: "",
+                        notes: "",
+                        pinned: false,
+                    },
+
+                    init() {
+                        // Load theme preference
+                        const savedTheme = localStorage.getItem("theme");
+                        this.darkMode = savedTheme === "dark";
+                        this.applyTheme();
+
+                        // Load bots
+                        this.loadBots();
+
+                        // Watch search query
+                        this.$watch("searchQuery", () => {
+                            this.filterBots();
+                        });
+
+                        // Watch bots array
+                        this.$watch("bots", () => {
+                            this.filterBots();
+                            this.$nextTick(() => {
+                                this.initSortable();
+                            });
+                        });
+                    },
+
+                    applyTheme() {
+                        if (this.darkMode) {
+                            document.documentElement.classList.add("dark");
+                        } else {
+                            document.documentElement.classList.remove("dark");
+                        }
+                    },
+
+                    toggleTheme() {
+                        this.darkMode = !this.darkMode;
+                        localStorage.setItem(
+                            "theme",
+                            this.darkMode ? "dark" : "light",
+                        );
+                        this.applyTheme();
+                    },
+
+                    async loadBots() {
+                        this.loading = true;
+                        try {
+                            const response = await fetch("/api/bots");
+                            const data = await response.json();
+
+                            if (data.success) {
+                                this.bots = data.bots;
+                            } else {
+                                this.showToast("Failed to load bots", "error");
+                            }
+                        } catch (error) {
+                            console.error("Error loading bots:", error);
+                            this.showToast("Error loading bots", "error");
+                        } finally {
+                            this.loading = false;
+                        }
+                    },
+
+                    filterBots() {
+                        if (!this.searchQuery) {
+                            this.filteredBots = this.bots;
+                        } else {
+                            const query = this.searchQuery.toLowerCase();
+                            this.filteredBots = this.bots.filter(
+                                (bot) =>
+                                    bot.name.toLowerCase().includes(query) ||
+                                    bot.path.toLowerCase().includes(query) ||
+                                    bot.command.toLowerCase().includes(query) ||
+                                    (bot.notes &&
+                                        bot.notes
+                                            .toLowerCase()
+                                            .includes(query)),
+                            );
+                        }
+                    },
+
+                    async refreshBots() {
+                        await this.loadBots();
+                        this.showToast("Bots refreshed", "success");
+                    },
+
+                    openAddModal() {
+                        this.editMode = false;
+                        this.formData = {
+                            id: null,
+                            name: "",
+                            path: "",
+                            command: "",
+                            notes: "",
+                            pinned: false,
+                        };
+                        this.showModal = true;
+                    },
+
+                    openEditModal(bot) {
+                        this.editMode = true;
+                        this.formData = {
+                            id: bot.id,
+                            name: bot.name,
+                            path: bot.path,
+                            command: bot.command,
+                            notes: bot.notes || "",
+                            pinned: bot.pinned || false,
+                        };
+                        this.showModal = true;
+                    },
+
+                    closeModal() {
+                        this.showModal = false;
+                    },
+
+                    async saveBot() {
+                        try {
+                            const url = this.editMode
+                                ? `/api/bots/${this.formData.id}`
+                                : "/api/bots";
+                            const method = this.editMode ? "PUT" : "POST";
+
+                            const response = await fetch(url, {
+                                method: method,
+                                headers: {
+                                    "Content-Type": "application/json",
+                                },
+                                body: JSON.stringify(this.formData),
+                            });
+
+                            const data = await response.json();
+
+                            if (data.success) {
+                                this.showToast(
+                                    this.editMode
+                                        ? "Bot updated successfully"
+                                        : "Bot added successfully",
+                                    "success",
+                                );
+                                this.closeModal();
+                                await this.loadBots();
+                            } else {
+                                this.showToast(
+                                    data.error || "Failed to save bot",
+                                    "error",
+                                );
+                            }
+                        } catch (error) {
+                            console.error("Error saving bot:", error);
+                            this.showToast("Error saving bot", "error");
+                        }
+                    },
+
+                    async confirmDelete(bot) {
+                        if (
+                            confirm(
+                                `Are you sure you want to delete "${bot.name}"?`,
+                            )
+                        ) {
+                            await this.deleteBot(bot.id);
+                        }
+                    },
+
+                    async deleteBot(botId) {
+                        try {
+                            const response = await fetch(`/api/bots/${botId}`, {
+                                method: "DELETE",
+                            });
+
+                            const data = await response.json();
+
+                            if (data.success) {
+                                this.showToast(
+                                    "Bot deleted successfully",
+                                    "success",
+                                );
+                                await this.loadBots();
+                            } else {
+                                this.showToast(
+                                    data.error || "Failed to delete bot",
+                                    "error",
+                                );
+                            }
+                        } catch (error) {
+                            console.error("Error deleting bot:", error);
+                            this.showToast("Error deleting bot", "error");
+                        }
+                    },
+
+                    async runBot(botId) {
+                        try {
+                            const response = await fetch(
+                                `/api/bots/${botId}/run`,
+                                {
+                                    method: "POST",
+                                },
+                            );
+
+                            const data = await response.json();
+
+                            if (data.success) {
+                                this.showToast(data.message, "success");
+                                await this.loadBots();
+                            } else {
+                                this.showToast(
+                                    data.error || "Failed to run bot",
+                                    "error",
+                                );
+                            }
+                        } catch (error) {
+                            console.error("Error running bot:", error);
+                            this.showToast("Error running bot", "error");
+                        }
+                    },
+
+                    async runAllBots() {
+                        if (
+                            !confirm(
+                                "Run all bots? This will open multiple PowerShell windows.",
+                            )
+                        ) {
+                            return;
+                        }
+
+                        try {
+                            const response = await fetch("/api/bots/run-all", {
+                                method: "POST",
+                            });
+
+                            const data = await response.json();
+
+                            if (data.success) {
+                                const successCount = data.results.filter(
+                                    (r) => r.success,
+                                ).length;
+                                this.showToast(
+                                    `Started ${successCount} bot(s)`,
+                                    "success",
+                                );
+                                await this.loadBots();
+                            } else {
+                                this.showToast("Failed to run bots", "error");
+                            }
+                        } catch (error) {
+                            console.error("Error running all bots:", error);
+                            this.showToast("Error running all bots", "error");
+                        }
+                    },
+
+                    async openFolder(botId) {
+                        try {
+                            const response = await fetch(
+                                `/api/bots/${botId}/open-folder`,
+                                {
+                                    method: "POST",
+                                },
+                            );
+
+                            const data = await response.json();
+
+                            if (data.success) {
+                                this.showToast("Folder opened", "success");
+                            } else {
+                                this.showToast(
+                                    data.error || "Failed to open folder",
+                                    "error",
+                                );
+                            }
+                        } catch (error) {
+                            console.error("Error opening folder:", error);
+                            this.showToast("Error opening folder", "error");
+                        }
+                    },
+
+                    async togglePin(botId) {
+                        const bot = this.bots.find((b) => b.id === botId);
+                        if (!bot) return;
+
+                        try {
+                            const response = await fetch(`/api/bots/${botId}`, {
+                                method: "PUT",
+                                headers: {
+                                    "Content-Type": "application/json",
+                                },
+                                body: JSON.stringify({ pinned: !bot.pinned }),
+                            });
+
+                            const data = await response.json();
+
+                            if (data.success) {
+                                await this.loadBots();
+                            }
+                        } catch (error) {
+                            console.error("Error toggling pin:", error);
+                        }
+                    },
+
+                    initSortable() {
+                        if (this.sortable) {
+                            this.sortable.destroy();
+                        }
+
+                        const grid = document.getElementById("bots-grid");
+                        if (!grid) return;
+
+                        this.sortable = new Sortable(grid, {
+                            animation: 150,
+                            ghostClass: "sortable-ghost",
+                            dragClass: "sortable-drag",
+                            onEnd: async (evt) => {
+                                const botIds = Array.from(grid.children).map(
+                                    (el) => el.getAttribute("data-id"),
+                                );
+                                await this.reorderBots(botIds);
+                            },
+                        });
+                    },
+
+                    async reorderBots(botIds) {
+                        try {
+                            const response = await fetch("/api/bots/reorder", {
+                                method: "POST",
+                                headers: {
+                                    "Content-Type": "application/json",
+                                },
+                                body: JSON.stringify({ bot_ids: botIds }),
+                            });
+
+                            const data = await response.json();
+
+                            if (data.success) {
+                                await this.loadBots();
+                            }
+                        } catch (error) {
+                            console.error("Error reordering bots:", error);
+                        }
+                    },
+
+                    showToast(message, type = "info") {
+                        const toast = {
+                            id: Date.now(),
+                            message: message,
+                            type: type,
+                        };
+
+                        this.toasts.push(toast);
+
+                        setTimeout(() => {
+                            this.removeToast(toast.id);
+                        }, 5000);
+                    },
+
+                    removeToast(toastId) {
+                        this.toasts = this.toasts.filter(
+                            (t) => t.id !== toastId,
+                        );
+                    },
+                };
+            }
+        </script>
+    </body>
+</html>
