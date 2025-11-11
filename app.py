@@ -6,7 +6,7 @@ import webbrowser
 import threading
 import time
 from pathlib import Path
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, render_template, jsonify, request, send_from_directory
 from flask_cors import CORS
 
 app = Flask(__name__)
@@ -27,29 +27,10 @@ running_processes = {}
 def load_bots():
     """Load bots from JSON file"""
     if not os.path.exists(BOTS_FILE):
-        # Create default bots file with examples
-        default_bots = [
-            {
-                "id": str(uuid.uuid4()),
-                "name": "Example Python Bot",
-                "path": "C:\\Bots\\PythonBot",
-                "command": "python main.py",
-                "notes": "This is an example Python bot. Replace with your actual bot path and command.",
-                "pinned": False,
-                "order": 0,
-            },
-            {
-                "id": str(uuid.uuid4()),
-                "name": "Example Node.js Bot",
-                "path": "C:\\Bots\\NodeBot",
-                "command": "node index.js",
-                "notes": "This is an example Node.js bot. Replace with your actual bot path and command.",
-                "pinned": True,
-                "order": 1,
-            },
-        ]
-        save_bots(default_bots)
-        return default_bots
+        # Create empty bots file - user must add bots manually
+        empty_bots = []
+        save_bots(empty_bots)
+        return empty_bots
 
     try:
         with open(BOTS_FILE, "r", encoding="utf-8") as f:
@@ -74,6 +55,22 @@ def save_bots(bots):
 def index():
     """Serve the main dashboard"""
     return render_template("index.html")
+
+
+@app.route("/icon/<path:filename>")
+def serve_icon(filename):
+    """Serve icon files"""
+    icon_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "icon")
+    return send_from_directory(icon_dir, filename)
+
+
+@app.route("/favicon.ico")
+def favicon():
+    """Serve favicon as fallback"""
+    icon_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "icon")
+    return send_from_directory(
+        icon_dir, "icon.ico", mimetype="image/vnd.microsoft.icon"
+    )
 
 
 @app.route("/api/bots", methods=["GET"])
