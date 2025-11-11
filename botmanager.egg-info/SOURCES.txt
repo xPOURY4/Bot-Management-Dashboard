@@ -1,0 +1,15 @@
+LICENSE
+README.md
+pyproject.toml
+setup.py
+botmanager/__init__.py
+botmanager/app.py
+botmanager/cli.py
+botmanager.egg-info/PKG-INFO
+botmanager.egg-info/SOURCES.txt
+botmanager.egg-info/dependency_links.txt
+botmanager.egg-info/entry_points.txt
+botmanager.egg-info/requires.txt
+botmanager.egg-info/top_level.txt
+botmanager/icon/icon.ico
+botmanager/templates/index.html

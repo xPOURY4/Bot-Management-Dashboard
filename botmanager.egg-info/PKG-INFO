@@ -1,0 +1,211 @@
+Metadata-Version: 2.4
+Name: botmanager
+Version: 1.0.0
+Summary: A modern, production-ready Windows desktop application for managing and running multiple bots from a beautiful web-based dashboard
+Home-page: https://github.com/xPOURY4/Bot-Management-Dashboard
+Author: TheRealPourya
+Author-email: TheRealPourya <your-email@example.com>
+License: MIT
+Project-URL: Homepage, https://github.com/xPOURY4/Bot-Management-Dashboard
+Project-URL: Bug-Tracker, https://github.com/xPOURY4/Bot-Management-Dashboard/issues
+Keywords: bot,management,dashboard,automation,python,nodejs,powershell
+Classifier: Development Status :: 5 - Production/Stable
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: Microsoft :: Windows
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Requires-Python: >=3.8
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: Flask>=3.0.0
+Requires-Dist: Flask-CORS>=4.0.0
+Requires-Dist: Werkzeug>=3.0.1
+Dynamic: author
+Dynamic: home-page
+Dynamic: license-file
+Dynamic: requires-python
+
+# BotManager
+
+A modern, production-ready Windows desktop application for managing and running multiple bots (Python, Node.js, or any command-line based bots) from a beautiful web-based dashboard.
+
+## Features
+
+- **Web-Based Dashboard**: Beautiful, responsive interface accessible via browser
+- **Multi-Bot Management**: Run multiple bots simultaneously
+- **PowerShell Integration**: Non-blocking PowerShell execution for each bot
+- **Real-time Status**: Track running/stopped status of all bots
+- **Drag & Drop**: Reorder bots with intuitive drag-and-drop interface
+- **Dark/Light Theme**: Toggle between themes with persistence
+- **Search & Filter**: Quickly find specific bots
+- **Pin Important Bots**: Keep frequently used bots at the top
+- **Open in Explorer**: One-click access to bot folders
+- **Cross-Drive Support**: Works with any Windows drive (C:\, D:\, G:\, etc.)
+- **Empty Default State**: Clean start - no example bots cluttering your dashboard
+
+## Installation
+
+### Via pip (Recommended)
+
+```bash
+pip install botmanager
+```
+
+### From Source
+
+```bash
+git clone https://github.com/xPOURY4/Bot-Management-Dashboard.git
+cd Bot-Management-Dashboard
+pip install -e .
+```
+
+## Usage
+
+### Quick Start
+
+After installation, simply run:
+
+```bash
+botmanager
+```
+
+This will:
+1. Start the Flask server on `http://127.0.0.1:5000`
+2. Open your default browser automatically
+3. Display the BotManager dashboard
+
+### Manual Start
+
+You can also run the application directly:
+
+```bash
+python -m botmanager
+```
+
+## How It Works
+
+### Adding Your First Bot
+
+1. **Launch BotManager**: Run `botmanager` from command line
+2. **Add Bot**: Click the "Add Your First Bot" button
+3. **Configure**:
+   - **Name**: Descriptive name for your bot
+   - **Path**: Full folder path (e.g., `G:\MyProject\Bot\MyBot`)
+   - **Command**: Run command (e.g., `python main.py`, `node index.js`, `npm start`)
+   - **Notes**: Optional description
+4. **Run**: Click "Run" to start your bot in a new PowerShell window
+
+### Supported Bot Types
+
+- **Python**: `python main.py`, `python bot.py`, etc.
+- **Node.js**: `node index.js`, `node app.js`, etc.
+- **npm**: `npm start`, `npm run dev`, etc.
+- **Any CLI**: Any command-line application or script
+
+### Data Storage
+
+All bot configurations are stored in:
+```
+C:\Users\<USERNAME>\BotManager\data\bots.json
+```
+
+## Command Line Options
+
+```bash
+botmanager --help
+```
+
+Options:
+- `--version`: Show version information
+- `--host`: Host to bind server to (default: 127.0.0.1)
+- `--port`: Port to bind server to (default: 5000)
+
+## API Endpoints
+
+The dashboard provides a RESTful API:
+
+- `GET /api/bots` - Get all bots
+- `POST /api/bots` - Add a new bot
+- `PUT /api/bots/<id>` - Update a bot
+- `DELETE /api/bots/<id>` - Delete a bot
+- `POST /api/bots/<id>/run` - Run a bot
+- `POST /api/bots/<id>/stop` - Stop a bot
+- `POST /api/bots/<id>/open-folder` - Open bot folder
+- `POST /api/bots/reorder` - Reorder bots
+
+## Requirements
+
+- **Python**: 3.8 or higher
+- **Operating System**: Windows 10/11
+- **Dependencies**:
+  - Flask >= 3.0.0
+  - Flask-CORS >= 4.0.0
+  - Werkzeug >= 3.0.1
+
+## Development
+
+### Project Structure
+
+```
+botmanager/
+├── app.py              # Main Flask application
+├── cli.py              # Command-line interface
+├── templates/          # HTML templates
+│   └── index.html     # Main dashboard
+├── static/            # Static assets
+│   ├── css/          # CSS files
+│   └── js/           # JavaScript files
+└── icon/             # Application icons
+    └── icon.ico      # Favicon
+```
+
+### Building from Source
+
+```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Run development server
+python -m botmanager
+
+# Or run directly
+python botmanager/app.py
+```
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Port 5000 in use**: Close other applications using port 5000
+2. **Bot won't run**: Verify the folder path exists and command is correct
+3. **Python not found**: Ensure Python is installed and in PATH
+4. **PowerShell issues**: Verify PowerShell is available on your system
+
+### Data Location
+
+If you need to reset your bot configurations, delete:
+```
+C:\Users\<USERNAME>\BotManager\data\bots.json
+```
+
+## License
+
+MIT License - See LICENSE file for details
+
+## Support
+
+- **Issues**: [GitHub Issues](https://github.com/xPOURY4/Bot-Management-Dashboard/issues)
+- **Source**: [GitHub Repository](https://github.com/xPOURY4/Bot-Management-Dashboard)
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit pull requests or open issues for bugs and feature requests.
+
+---
+
+**Developed by TheRealPourya Team**
